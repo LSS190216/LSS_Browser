@@ -1,0 +1,14 @@
+dns_mode=auto
+custom_dns=
+theme=system
+show_dns_status=true
+dns_error_color=#cc0000
+dns_ok_color=#008800
+home_background=default_background.jpg
+home_shortcuts_list=[{"name":"百度","url":"https://www.baidu.com","icon":""},{"name":"必应","url":"https://www.bing.com","icon":""},{"name":"哔哩哔哩","url":"https://www.bilibili.com","icon":""},{"name":"DeepSeek","url":"https://chat.deepseek.com","icon":""}]
+language=简体中文
+full_isolation=false
+history=[]
+media_volume=1.0
+download_threads=8
+shortcuts={"settings":"Ctrl+Shift+I","appearance":"Ctrl+Shift+A","dns":"Ctrl+Shift+N","volume":"Ctrl+Shift+V","privacy":"Ctrl+Shift+P","download":"Ctrl+Shift+D","download_settings":"Ctrl+Shift+S"}

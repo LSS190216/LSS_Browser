@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LSS Browser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: no-repeat center center fixed;
+            background-size: cover;
+            position: relative;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+        
+        .background-overlay {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+            padding: 20px;
+        }
+        
+        .logo-section {
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            width: 90px;
+            height: 90px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+        
+        .logo-title {
+            font-size: 72px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            letter-spacing: -2px;
+            user-select: none;
+        }
+        
+        .search-box {
+            width: 100%;
+            max-width: 680px;
+            margin-bottom: 50px;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 18px 60px 18px 24px;
+            font-size: 18px;
+            border: none;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            outline: none;
+        }
+        
+        .search-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #4285f4;
+            border: none;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .search-btn:hover {
+            background: #3367d6;
+        }
+        
+        .search-btn svg {
+            fill: white;
+            width: 24px;
+            height: 24px;
+        }
+        
+        .shortcuts {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 40px;
+            width: 100%;
+            max-width: 840px;
+        }
+        
+        .shortcut {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            padding: 15px;
+            border-radius: 16px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-drag: none;
+            width: 80px;
+            box-sizing: border-box;
+        }
+        
+        .shortcut:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .shortcut-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+        
+        .shortcut-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+        
+        .shortcut-icon.fallback {
+            font-size: 28px;
+        }
+        
+        .shortcut-name {
+            color: #fff;
+            font-size: 13px;
+            text-align: center;
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+        
+        .add-shortcut {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+        }
+        
+        .add-shortcut:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .add-shortcut .shortcut-icon {
+            background: transparent;
+            color: white;
+            font-size: 36px;
+            box-shadow: none;
+        }
+        
+        .dialog-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .dialog-overlay.show {
+            display: flex;
+        }
+        
+        .dialog {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            min-width: 300px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-sizing: border-box;
+        }
+        
+        .dialog-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .dialog-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .dialog-input:focus {
+            outline: none;
+            border-color: #4285f4;
+        }
+        
+        .dialog-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .dialog-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .dialog-btn.cancel {
+            background: #f5f5f5;
+            color: #666;
+        }
+        
+        .dialog-btn.cancel:hover {
+            background: #e5e5e5;
+        }
+        
+        .dialog-btn.ok {
+            background: #4285f4;
+            color: white;
+        }
+        
+        .dialog-btn.ok:hover {
+            background: #3367d6;
+        }
+        
+        .footer {
+            padding: 20px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .shortcuts {
+                grid-template-columns: repeat(4, 80px);
+                gap: 15px;
+            }
+            
+            .logo-title {
+                font-size: 48px;
+            }
+            
+            .logo-icon {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .shortcut-icon {
+                width: 48px;
+                height: 48px;
+            }
+            
+            .shortcut {
+                width: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-overlay"></div>
+    <div class="container">
+        <div class="logo-section">
+            <img src="icon.png" alt="Logo" class="logo-icon">
+            <span class="logo-title">LSS Browser</span>
+        </div>
+        
+        <div class="search-box">
+            <input type="text" class="search-input" id="searchInput" placeholder="搜索或输入网址..." autocomplete="off">
+            <button class="search-btn" onclick="performSearch()">
+                <svg viewBox="0 0 24 24">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="shortcuts" id="shortcutsContainer">
+        </div>
+    </div>
+    
+    <div class="footer">
+        按 Tab 键可直接聚焦到搜索框
+    </div>
+    
+    <div class="dialog-overlay" id="addShortcutDialog">
+        <div class="dialog">
+            <div class="dialog-title">新建快捷方式</div>
+            <input type="text" class="dialog-input" id="shortcutNameInput" placeholder="快捷方式名称">
+            <input type="text" class="dialog-input" id="shortcutUrlInput" placeholder="网站URL（如 https://www.example.com）">
+            <div class="dialog-buttons">
+                <button class="dialog-btn cancel" onclick="hideAddShortcutDialog()">取消</button>
+                <button class="dialog-btn ok" onclick="addShortcut()">确定</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const DEFAULT_SHORTCUTS = [];
+        
+        let shortcuts = [];
+        
+        function loadSettings() {
+            const savedBackground = localStorage.getItem('lss_home_background');
+            if (savedBackground) {
+                document.body.style.backgroundImage = `url('${savedBackground}')`;
+                // 根据背景亮度自动调整文字颜色
+                detectBackgroundBrightness(savedBackground);
+            } else {
+                document.body.style.backgroundImage = "url('default_background.jpg')";
+                // 默认背景使用白色文字
+                setTextColor('#fff');
+            }
+        }
+        
+        function detectBackgroundBrightness(imageUrl) {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                
+                // 获取图片中心区域的平均亮度
+                const centerX = Math.floor(img.width / 2);
+                const centerY = Math.floor(img.height / 2);
+                const sampleSize = Math.min(100, Math.floor(img.width / 4), Math.floor(img.height / 4));
+                
+                const imageData = ctx.getImageData(
+                    centerX - sampleSize / 2,
+                    centerY - sampleSize / 2,
+                    sampleSize,
+                    sampleSize
+                );
+                
+                const data = imageData.data;
+                let totalBrightness = 0;
+                let pixelCount = 0;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    // 计算亮度（使用加权公式）
+                    const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+                    totalBrightness += brightness;
+                    pixelCount++;
+                }
+                
+                const avgBrightness = totalBrightness / pixelCount;
+                
+                // 根据平均亮度决定文字颜色
+                // 亮度 > 128 使用黑色文字，否则使用白色文字
+                if (avgBrightness > 128) {
+                    setTextColor('#333');
+                } else {
+                    setTextColor('#fff');
+                }
+            };
+            img.onerror = function() {
+                // 图片加载失败，使用默认白色文字
+                setTextColor('#fff');
+            };
+            img.src = imageUrl;
+        }
+        
+        function setTextColor(color) {
+            const logoTitle = document.querySelector('.logo-title');
+            if (logoTitle) {
+                logoTitle.style.color = color;
+                // 根据颜色调整阴影
+                if (color === '#333') {
+                    logoTitle.style.textShadow = '0 2px 10px rgba(255, 255, 255, 0.3)';
+                } else {
+                    logoTitle.style.textShadow = '0 4px 20px rgba(0, 0, 0, 0.5)';
+                }
+            }
+            
+            // 同时调整快捷方式名称的颜色
+            const shortcutNames = document.querySelectorAll('.shortcut-name');
+            shortcutNames.forEach(function(el) {
+                el.style.color = color;
+                if (color === '#333') {
+                    el.style.textShadow = '0 2px 8px rgba(255, 255, 255, 0.3)';
+                } else {
+                    el.style.textShadow = '0 2px 8px rgba(0, 0, 0, 0.5)';
+                }
+            });
+            
+            // 调整底部文字颜色
+            const footer = document.querySelector('.footer');
+            if (footer) {
+                footer.style.color = color === '#333' ? 'rgba(51, 51, 51, 0.8)' : 'rgba(255, 255, 255, 0.8)';
+            }
+        }
+        
+        function loadShortcuts() {
+            loadSettings();
+            try {
+                const saved = localStorage.getItem('lss_home_shortcuts_list');
+                if (saved && saved !== '[]' && saved !== '') {
+                    shortcuts = JSON.parse(saved);
+                } else {
+                    shortcuts = [];
+                }
+            } catch (e) {
+                shortcuts = [];
+            }
+            renderShortcuts();
+        }
+        
+        function saveShortcuts() {
+            localStorage.setItem('lss_home_shortcuts_list', JSON.stringify(shortcuts));
+        }
+        
+        function renderShortcuts() {
+            const container = document.getElementById('shortcutsContainer');
+            container.innerHTML = '';
+            
+            shortcuts.forEach((shortcut, index) => {
+                const div = document.createElement('a');
+                div.className = 'shortcut';
+                div.href = shortcut.url;
+                
+                const iconDiv = document.createElement('div');
+                iconDiv.className = 'shortcut-icon';
+                
+                if (shortcut.icon) {
+                    const img = document.createElement('img');
+                    img.src = shortcut.icon;
+                    img.alt = shortcut.name;
+                    img.onerror = () => {
+                        iconDiv.textContent = shortcut.name[0];
+                        iconDiv.classList.add('fallback');
+                    };
+                    iconDiv.appendChild(img);
+                } else {
+                    iconDiv.textContent = shortcut.name[0];
+                    iconDiv.classList.add('fallback');
+                }
+                
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'shortcut-name';
+                nameDiv.textContent = shortcut.name;
+                
+                div.appendChild(iconDiv);
+                div.appendChild(nameDiv);
+                container.appendChild(div);
+            });
+            
+            // 不显示主页添加快捷方式按钮，统一使用"编辑图标"界面管理
+        }
+        
+        function showAddShortcutDialog() {
+            document.getElementById('addShortcutDialog').classList.add('show');
+            document.getElementById('shortcutNameInput').value = '';
+            document.getElementById('shortcutUrlInput').value = '';
+            document.getElementById('shortcutNameInput').focus();
+        }
+        
+        function hideAddShortcutDialog() {
+            document.getElementById('addShortcutDialog').classList.remove('show');
+        }
+        
+        function addShortcut() {
+            const name = document.getElementById('shortcutNameInput').value.trim();
+            const url = document.getElementById('shortcutUrlInput').value.trim();
+            
+            if (!name) {
+                alert('请输入快捷方式名称');
+                return;
+            }
+            
+            if (!url) {
+                alert('请输入网站URL');
+                return;
+            }
+            
+            let finalUrl = url;
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                finalUrl = 'https://' + url;
+            }
+            
+            shortcuts.push({ name, url: finalUrl, icon: '' });
+            saveShortcuts();
+            renderShortcuts();
+            hideAddShortcutDialog();
+        }
+        
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+            
+            let url;
+            if (query.startsWith('http://') || query.startsWith('https://')) {
+                url = query;
+            } else {
+                url = `https://www.baidu.com/s?wd=${encodeURIComponent(query)}`;
+            }
+            
+            window.location.href = url;
+        }
+        
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+        
+        // loadShortcuts(); // 不自动加载，由Python注入代码后调用
+    </script>
+</body>
+</html>
